@@ -27,6 +27,10 @@ const (
 	ValueTypeMap
 	ValueTypeSlice
 	ValueTypeBytes
+	// ValueTypeStrIndex is a string held as an index into a profile's string
+	// table rather than inline. Appended so the existing constants keep their
+	// values.
+	ValueTypeStrIndex
 )
 
 // String returns the string representation of the ValueType.
@@ -48,6 +52,8 @@ func (avt ValueType) String() string {
 		return "Slice"
 	case ValueTypeBytes:
 		return "Bytes"
+	case ValueTypeStrIndex:
+		return "StrIndex"
 	}
 	return ""
 }
@@ -76,6 +82,16 @@ func NewValueEmpty() Value {
 }
 
 // NewValueStr creates a new Value with the given string value.
+// NewValueStrIndex creates a new Value holding an index into a profile's
+// string table. See Value.StrIndex.
+func NewValueStrIndex(v int32) Value {
+	ov := internal.NewAnyValueStringValueStrindex()
+	ov.StringValueStrindex = v
+	orig := internal.NewAnyValue()
+	orig.Value = ov
+	return newValue(orig, internal.NewState())
+}
+
 func NewValueStr(v string) Value {
 	ov := internal.NewAnyValueStringValue()
 	ov.StringValue = v
@@ -213,6 +229,8 @@ func (v Value) Type() ValueType {
 		return ValueTypeSlice
 	case *internal.AnyValue_BytesValue:
 		return ValueTypeBytes
+	case *internal.AnyValue_StringValueStrindex:
+		return ValueTypeStrIndex
 	}
 	return ValueTypeEmpty
 }
@@ -286,6 +304,25 @@ func (v Value) SetStr(sv string) {
 	internal.DeleteAnyValue(v.getOrig(), false)
 	ov := internal.NewAnyValueStringValue()
 	ov.StringValue = sv
+	v.getOrig().Value = ov
+}
+
+// StrIndex returns the index into the profile's string table held by this
+// Value. If Type() is not ValueTypeStrIndex it returns 0.
+//
+// Unlike Str, this does not resolve the string: the table lives on the profile,
+// not on the Value, so the caller looks it up.
+func (v Value) StrIndex() int32 {
+	return v.getOrig().GetStringValueStrindex()
+}
+
+// SetStrIndex replaces the value with an index into the profile's string table.
+func (v Value) SetStrIndex(idx int32) {
+	v.getState().AssertMutable()
+	// Delete everything but the AnyValue object itself.
+	internal.DeleteAnyValue(v.getOrig(), false)
+	ov := internal.NewAnyValueStringValueStrindex()
+	ov.StringValueStrindex = idx
 	v.getOrig().Value = ov
 }
 
@@ -488,6 +525,8 @@ func (v Value) AsRaw() any {
 		return v.Map().AsRaw()
 	case ValueTypeSlice:
 		return v.Slice().AsRaw()
+	case ValueTypeStrIndex:
+		return v.StrIndex()
 	}
 	return fmt.Sprintf("<Unknown OpenTelemetry value type %q>", v.Type())
 }
@@ -514,6 +553,8 @@ func (v Value) Equal(c Value) bool {
 		return v.Map().Equal(c.Map())
 	case ValueTypeSlice:
 		return v.Slice().Equal(c.Slice())
+	case ValueTypeStrIndex:
+		return v.StrIndex() == c.StrIndex()
 	}
 
 	return false

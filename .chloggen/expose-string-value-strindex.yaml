@@ -1,0 +1,16 @@
+change_type: enhancement
+
+component: pkg/pdata
+
+note: Expose `string_value_strindex` on `pcommon.Value` so profiles data using it can be read and written
+
+issues: [15450]
+
+subtext: |
+  The field already existed in the generated proto but no public accessor reached it, so it
+  was only usable from internal packages. Adds `ValueTypeStrIndex`, `NewValueStrIndex`,
+  `Value.StrIndex` and `Value.SetStrIndex`, and handles the new type in `Type`, `AsRaw`,
+  `Equal` and `ValueType.String`. The new constant is appended to the `ValueType` block so
+  the existing values keep their numbers.
+
+change_logs: [api]

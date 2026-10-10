@@ -34,6 +34,13 @@ func NewAnyValueStringValue() *AnyValue_StringValue {
 	return ProtoPoolAnyValue_StringValue.Get().(*AnyValue_StringValue)
 }
 
+func NewAnyValueStringValueStrindex() *AnyValue_StringValueStrindex {
+	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
+		return &AnyValue_StringValueStrindex{}
+	}
+	return ProtoPoolAnyValue_StringValueStrindex.Get().(*AnyValue_StringValueStrindex)
+}
+
 func NewAnyValueIntValue() *AnyValue_IntValue {
 	if !metadata.PdataUseProtoPoolingFeatureGate.IsEnabled() {
 		return &AnyValue_IntValue{}
